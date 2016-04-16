@@ -77,10 +77,12 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "RaspiCamControl.h"
 #include "RaspiCLI.h"
 
+#include <dynamic_reconfigure/server.h>
+#include <raspicam/CameraConfig.h>
 
 #include <semaphore.h>
 
-#define ADDED_FOR_SSRC
+///#define ADDED_FOR_SSRC
 
 #ifdef ADDED_FOR_SSRC
 
@@ -829,6 +831,49 @@ bool serv_publish_image_once(std_srvs::Empty::Request&, std_srvs::Empty::Respons
 #endif // #ifdef ADDED_FOR_SSRC
 
 
+void reconfigure_callback(raspicam::CameraConfig &config, uint32_t level) {
+  ROS_INFO("Reconfigure Request: contrast %d, sharpness %d, brightness %d, saturation %d, ISO %d, exposureCompensation %d,"
+		   " videoStabilisation %d, zoom %.2f, exposure_mode %s, awb_mode %s",
+		    config.contrast, config.sharpness, config.brightness,
+			config.saturation, config.ISO, config.exposureCompensation, config.videoStabilisation,
+            config.zoom,
+            config.exposure_mode.c_str(),
+			config.awb_mode.c_str());
+
+  if (!state_srv.camera_component) {
+	  ROS_WARN("camera_component not initialized");
+	  return;
+  }
+
+  if (config.zoom < 1.0) {
+	  ROS_ERROR("Zoom value %f too small (must be at least 1.0)", config.zoom);
+  } else {
+	  const double size = 1.0 / config.zoom;
+	  const double offset = (1.0 - size) / 2.0;
+	  PARAM_FLOAT_RECT_T roi;
+	  roi.x = roi.y = offset;
+	  roi.w = roi.h = size;
+	  raspicamcontrol_set_ROI(state_srv.camera_component, roi);
+  }
+
+  raspicamcontrol_set_exposure_mode(state_srv.camera_component,
+		  exposure_mode_from_string(config.exposure_mode.c_str()));
+
+  raspicamcontrol_set_awb_mode(state_srv.camera_component,
+		  awb_mode_from_string(config.awb_mode.c_str()));
+
+  raspicamcontrol_set_contrast(state_srv.camera_component, config.contrast);
+  raspicamcontrol_set_sharpness(state_srv.camera_component, config.sharpness);
+  raspicamcontrol_set_brightness(state_srv.camera_component, config.brightness);
+  raspicamcontrol_set_saturation(state_srv.camera_component, config.saturation);
+  raspicamcontrol_set_ISO(state_srv.camera_component, config.ISO);
+  raspicamcontrol_set_exposure_compensation(state_srv.camera_component, config.exposureCompensation);
+  raspicamcontrol_set_video_stabilisation(state_srv.camera_component, config.videoStabilisation);
+
+  ROS_INFO("Reconfigure done");
+}
+
+
 
 int main(int argc, char **argv){
    ros::init(argc, argv, "raspicam_node");
@@ -850,7 +895,8 @@ int main(int argc, char **argv){
    ROS_INFO("Loading CameraInfo from %s", camera_info_url.c_str());
    
    camera_info_manager::CameraInfoManager c_info_man (n, camera_name, camera_info_url);
-   get_status(&state_srv);
+   //get_status(&state_srv);
+   init_cam(&state_srv); // will need to figure out how to handle start and stop with dynamic reconfigure
 
    if(!c_info_man.loadCameraInfo (camera_info_url)){
 	ROS_INFO("Calibration file missing. Camera not calibrated");
@@ -869,6 +915,12 @@ int main(int argc, char **argv){
    if(srrc_publishing_mode != SrrcPublish_Always)
        start_capture(&state_srv);
 #endif // #ifdef ADDED_FOR_SSRC
+
+   dynamic_reconfigure::Server<raspicam::CameraConfig> server;
+   dynamic_reconfigure::Server<raspicam::CameraConfig>::CallbackType f;
+   f = boost::bind(&reconfigure_callback, _1, _2);
+   server.setCallback(f);
+
    ros::spin();
    close_cam(&state_srv);
    return 0;

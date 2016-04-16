@@ -131,6 +131,8 @@ typedef struct
    PARAM_FLOAT_RECT_T  roi;   /// region of interest to use on the sensor. Normalised [0,1] values in the rect
 } RASPICAM_CAMERA_PARAMETERS;
 
+MMAL_PARAM_EXPOSUREMODE_T exposure_mode_from_string(const char *str);
+MMAL_PARAM_AWBMODE_T awb_mode_from_string(const char *str);
 
 void raspicamcontrol_check_configuration(int min_gpu_mem);
 
