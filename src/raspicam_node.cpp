@@ -906,12 +906,12 @@ int main(int argc, char **argv){
    	c_info = c_info_man.getCameraInfo ();
 	ROS_INFO("Camera successfully calibrated");
    }
-   image_pub = n.advertise<sensor_msgs::CompressedImage>("camera/image/compressed", 1);
-   camera_info_pub = n.advertise<sensor_msgs::CameraInfo>("camera/camera_info", 1);
-   ros::ServiceServer start_cam = n.advertiseService("camera/start_capture", serv_start_cap);
-   ros::ServiceServer stop_cam = n.advertiseService("camera/stop_capture", serv_stop_cap);
+   image_pub = n.advertise<sensor_msgs::CompressedImage>("image/compressed", 1);
+   camera_info_pub = n.advertise<sensor_msgs::CameraInfo>("camera_info", 1);
+   ros::ServiceServer start_cam = n.advertiseService("start_capture", serv_start_cap);
+   ros::ServiceServer stop_cam = n.advertiseService("stop_capture", serv_stop_cap);
 #ifdef ADDED_FOR_SSRC
-   ros::ServiceServer publish_image_requests_server = n.advertiseService("camera/publish_once_now", serv_publish_image_once);
+   ros::ServiceServer publish_image_requests_server = n.advertiseService("publish_once_now", serv_publish_image_once);
    if(srrc_publishing_mode != SrrcPublish_Always)
        start_capture(&state_srv);
 #endif // #ifdef ADDED_FOR_SSRC
