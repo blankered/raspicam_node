@@ -302,7 +302,7 @@ static void encoder_buffer_callback(MMAL_PORT_T *port, MMAL_BUFFER_HEADER_T *buf
 
 	if (complete){
 	    if (pData->id != INT_MAX) {
-	        ROS_INFO("Frame size %d", pData->id);
+	        //ROS_INFO("Frame size %d", pData->id);
 		    if (skip_frames > 0 && frames_skipped < skip_frames) {
 			    frames_skipped++;
 		    } else {
